@@ -1,0 +1,110 @@
+#!/bin/bash
+
+function explicate
+{
+	local COMMAND=$1
+	local MODE=$2
+	local DESCRIPTION=$3
+	local ERROR_COMMAND=$4
+
+	local ERR=0
+
+	# usage
+	if [ "$COMMAND" == "" -o "$COMMAND" == "--help" ]
+	then
+		echo "$( basename $0 ): Supporting debugging"
+		echo ""
+		echo "Usage: explicate command [mode [description [error reaction]]]"
+		echo ""
+		echo "  mode:   1: normal. Execute command. Show info in case of error"
+		echo "          0: simulate sucessfully. Only show the command"
+		echo "          2: simulate unsucessfully. Pretend an error"
+		echo "          3: verbose. Show prefix and postfix information"
+		echo "          4: describe. Only show description"
+		return 1
+	fi
+
+	# mode: 1 as default
+	if [ "$MODE" == "" ]
+	then
+		MODE=1
+	fi
+	# description: COMMANd as default
+	if [ "$DESCRIPTION" == "" ]
+	then
+		DESCRIPTION=$COMMAND
+	fi
+
+	# heading
+	if [ "$MODE" == "3" ]
+	then
+		echo "============  starting: \"$DESCRIPTION\"  ========== " >/dev/stderr
+	fi
+
+	# show command name
+	if [ "$MODE" == "0" -o "$MODE" == "3" ]
+	then
+		echo "$COMMAND" >/dev/stderr
+	fi
+
+	# description
+	if [ "$MODE" == "4" ]
+	then
+		echo "$DESCRIPTION" >/dev/stderr
+	fi
+
+	# error 
+	if [ "$MODE" == "2" ]
+	then
+		ERR=1
+		RES="error simulated"
+	fi
+
+	# execute
+	if [ "$MODE" == "1" -o "$MODE" == "3" ]
+	then
+		(eval "$COMMAND")
+		RES=$?
+		if [ $RES != 0 ]
+		then
+			ERR=1
+		fi
+	fi
+
+	# show error information
+	if [ "$ERR" != "0" ]
+	then
+		# execute error reaction
+		if [ "$ERROR_COMMAND" != "" ]
+		then
+			echo "" >/dev/stderr
+			eval "$ERROR_COMMAND" >/dev/stderr
+		fi
+		echo "" >/dev/stderr
+		echo "*** error: $DESCRIPTION" >/dev/stderr
+		echo "*** command: $COMMAND" >/dev/stderr
+		echo "*** error-code: $RES" >/dev/stderr
+		echo "*** $(date +'%Y-%m-%d %T'): host: $(hostname), user: $(whoami), directory: $(pwd)", caller: $( realpath $0 ) >/dev/stderr
+		ERR=1
+	fi
+
+	# conclusion
+	if [ "$MODE" == "3" ]
+	then
+		if [ "$RES" == "0" ]
+		then
+			echo "------------  done: $DESCRIPTION  ---------- " >/dev/stderr
+		else
+			echo "------------  failure: $DESCRIPTION  ---------- " >/dev/stderr
+		fi
+	fi
+
+	return ${ERR}
+}
+
+if [ "$1" != "" ]
+then
+	explicate "$@"
+	exit $?
+fi
+

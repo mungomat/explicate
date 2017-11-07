@@ -1,0 +1,43 @@
+#!/bin/bash
+
+source explicate
+
+function mytest
+{
+	MODE=$1
+
+	local ERR=0
+	explicate 'echo "failure"; exit 2' $MODE "failing test" || ERR=1
+	explicate 'echo "success"' $MODE "successfull test" || (echo "hier"; ERR=1)
+	return $ERR
+}
+
+echo "Easy example:"
+explicate 'echo "hello"' 1 "Easy example"
+echo ""
+echo ""
+echo "Easy example - simulation:"
+explicate 'echo "hello"' 0 "Easy example - simulation"
+echo ""
+echo ""
+echo "Easy example - verbose:"
+explicate 'echo "hello"' 3 "Easy example - verbose"
+echo ""
+echo ""
+echo "Easy example - description:"
+explicate 'echo "hello"' 4 "Easy example - description"
+echo ""
+echo ""
+
+
+explicate "mytest 4" 3 "test shedule"
+echo ""
+echo ""
+explicate "mytest 0" 3 "test simulation"
+echo ""
+echo ""
+explicate "mytest 1" 3 "actual tests" 'echo "Some tests failed - This is intentional"'
+echo ""
+echo ""
+explicate "mytest 3" 3 "verbose tests" 'echo "Some tests failed - This is intentional"'
+
